@@ -146,5 +146,5 @@ Expanding on Example 1, a Business Objects and Business Objects Data Services sy
 
 In this example all the database applications are started first, followed by the BW application instance and finally the BO and BO dataservices instances.
 
-A stop action performs the same process but in reverse SAPPriority order
+A stop action performs the same process but in reverse autoPriority order
 
