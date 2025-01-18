@@ -85,13 +85,15 @@ A local control script identified by VM tag AutoCommand is located on each VM an
 The control script may be different on each host depending on what applications and services that host is running but each script should follow the same parameters and output criteria.
 
 **Example:**
-- Windows	C:\azscripts\azcontrol.ps1 $Action
-- Linux		/azscripts/azcontrol.sh $Action
+- Windows	Tag:autoCommand = C:\azscripts\azcontrol.ps1 $Action
+- Linux		Tag:autoCommand = /azscripts/azcontrol.sh $Action
+
+The Runbook replaces '$Action' with the action called i.e.: Start, Stop or Check
 
 The control script reads a local configuration file which defines the applications and services on that host
 
 ### Parameters
-	start|stop|(check|*)<br/>
+	start|stop|(check|*)
 	The AzVMControl Runbook substitutes the $Action for the required control action
 
 ### Output
@@ -117,13 +119,56 @@ When called from an Azure Runbook the local scripts are ran as NT/SYSTEM user fo
 ### Supported applications and services
 
 -	SAPInstance	SAP system instance
--	WINService		Windows service
--	WINCluster		local cluster
+-	WINService	Windows service
+-	WINCluster	local cluster
 -	HANACluster	HANA Cluster
 
 ### Configuration file
 The local control script reads a configuration file stored in the same directory as the script and called *hostname*.conf. This configuration file describes the applications and services running on this host.<br/>
-*See example files*
+
+Example 1
+```
+# File myhost.conf used by azcontrol.ps1
+
+WINService -Name "SQL Server (MSSQLSERVER)"
+WINService -Name "SQL Server Agent (MSSQLSERVER)"
+WINService -Name "Server Intelligence Agent (N24QASDZQA01)"
+WINCluster
+SAPInstance -SAPControl F:\usr\sap\XYZ\ASCS01\exe\sapcontrol.exe -User xydadm -Pass "blahblah"
+SAPInstance -SAPControl F:\usr\sap\XYZ\DVEBMGS00\exe\sapcontrol.exe -User xydadm -Pass "blahblah" -Grace 60
+```
+Services are processed from top to bottom (ascending) on Start and bottom to top (descending) on Stop<br/>
+Calling ```azcontrol.ps1 Start``` will Start the 3 Windows Services first, then the Local Cluster and then SAP ASCS instance and then app instance<br/>
+Calling ```azcontrol.ps1 Stop``` will stop SAP app instance, then ASCS, then local Cluster and then each Windows Service in turn<br/
+
+Example 2
+```
+# File myhost.conf used by azcontrol.sh
+
+HANACluster /usr/sap/DEV/HDB00/exe/sapcontrol.exe
+SAPInstance /usr/sap/XYZ/DVEBMGS69/exe/sapcontrol.exe
+```
+Services are process from top to bottom (ascending) on Start and bottom to top (descending) on Stop<br/>
+Calling ```azcontrol.sh stop``` will stop SAP Instance and then shutdown the HANA cluster<br/>
+Calling ```azcontrol.sh start``` will start HANA cluster and then start SAP Instance<br/>
+
+### Custom scripts
+The two example local scripts provided: azcontrol.ps1 and azcontrol.sh don't have to be used<br/>
+Any script can be used that the Runbook can call before VM shutdown and after VM start<br/>
+The Runbook will use parameter substitution to pass the Action to the script, example<br/>
+```/usr/sap/local/myscript.sh -sapinstances $Action```
+
+Use the string ```(Exit*:*)``` to relay the script exit condition back to the Runbook (see above), Examples:
+```
+(Exit-Code:Error) or (Exit:2) - The script ended with error
+(Exit:Warning) or (Exit:1) - The script ended with Warning
+etc
+etc
+```
+
+
+
+
 
 ## VM Prioritisation
 VM Applications within a group can be grouped into Priority via the AutoPriority tag the Runbook will process each Priority group in parallel working in ascending Priority on Start and descending Priority order on Stop.
