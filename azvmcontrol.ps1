@@ -30,6 +30,9 @@
 	-AppStatus <string> (Default: Start - 'Running', Stop - 'Stopped')
 	Set the desired App return status. Used for -Action:Check to cause runbook to issue an error if desired status not received
 
+	-SubscriptionId <string>
+	Subscription ID. If not specified, the current subscription of automation account is used instead
+
 .AZURETAGS
 	Tag VM's with following tags to be read by runbook
 
@@ -305,11 +308,20 @@ Try {
 	# Connect to Azure with system-assigned managed server identity
 	Disable-AzContextAutosave -Scope Process | Out-Null
 	$AzureContext = (Connect-AzAccount -Identity -ErrorAction Stop).context
-	$AzureContext = Set-AzContext -SubscriptionName $AzureContext.Subscription -DefaultProfile $AzureContext -ErrorAction Stop
 }
 Catch {
 	Write-Output "Azure login failed - see Exceptions"
 	Throw "Azure loging failed: $($_.Exception.Message)"
+}
+
+if ($SubscriptionId) {
+	try {
+		Select-AzSubscription -SubscriptionId $SubscriptionId -ErrorVariable -notPresent -Tenant $AzureContext.Tenant | Out-Null
+	}
+	catch {
+		Write-Output "Error connecting to subscription - see Exceptions"
+		Throw "Azure subscription failed: $($_.Exception.Message)"
+	}
 }
 
 # Get all VM's belonging to this group, sometimes this doesn't work first time so try 3 times
