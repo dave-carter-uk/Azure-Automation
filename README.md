@@ -48,11 +48,14 @@ The RunBook will identify all VM’s matching the AutoGroup tag. It will process
 	-VMPriority0 | -VMP0
 	A switch instructs the Runbook to process all VM’s as a Priority 0 group. With this switch present all VM’s are started and stopped as a group, applications are still processed in priority order
 
-	-VMStatus [String](Default - Start: ‘VM running’, Stop: ‘VM deallocated’, Check: No default)
+	-VMStatus <string>(Default - Start: ‘VM running’, Stop: ‘VM deallocated’, Check: No default)
 	Provide the expected VM status, mainly used with the check action option to produce an error if the VM’s status does not return the expected status
 
-	-AppStatus [String] (Default – Start: ‘Running’, Stop: ‘Stopped’, Check: No default)
+	-AppStatus <string> (Default – Start: ‘Running’, Stop: ‘Stopped’, Check: No default)
 	Provide the expected Application status, mainly used with the check action option to produce an error if the application status does not return the expected status
+
+ 	-SubscriptionId <string>
+  	Subscription ID. If not specified, the current subscription of automation account is used instead
 
 **Output**<br/>
 Output written to the Output windows of the Azure job Portal
