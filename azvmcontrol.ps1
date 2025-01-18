@@ -110,7 +110,7 @@ Param (
 	[string] $AppStatus = $Null
 )
 
-$VERSION = "1.0"
+$VERSION = "1.1"
 
 # Disable general verbose - Verbose can be controlled from Azure Runbook settings
 $VerbosePreference = "SilentlyContinue"
@@ -118,6 +118,20 @@ $VerbosePreference = "SilentlyContinue"
 ##
 # Functions
 ###
+
+function Expand-String {
+
+	# Substitute $parameters in string
+	Param(
+		[string] $Text,
+		[object] $Params
+	)
+
+	[regex]::Replace($Text, '\$(\S*)', { 
+		$x = $Params[$ARGS[0].Groups[1].Value]
+		if ($x) { $x } else { $ARGS[0].Value }
+	})	
+}
 
 function Get-ExitValue {
 
@@ -196,8 +210,7 @@ function Invoke-VMCmdGroup {
 	Param(
 		[Parameter(Mandatory, ValueFromPipelineByPropertyName)][string] $Name,
 		[Parameter(Mandatory, ValueFromPipelineByPropertyName)][string] $ResourceGroupName,
-		[Parameter(Mandatory, ValueFromPipelineByPropertyName)][string] $Command,
-		[object] $Params
+		[Parameter(Mandatory, ValueFromPipelineByPropertyName)][string] $Command
 	)
 
 	Begin {
@@ -210,10 +223,9 @@ function Invoke-VMCmdGroup {
 		# Build run command
 		$VMOSType = (Get-AzVM -ResourceGroupName $ResourceGroupName -Name $Name).StorageProfile.OSDisk.OSType
 		$CmdId = $VMOSType -eq "Windows" ? "RunPowerShellScript" : "RunShellScript"
-		$CmdStr = [regex]::Replace($Command, '\$(\S*)', { $Params[$ARGS[0].Groups[1].Value] })
 
 		# Submit remote command job
-		$j = Invoke-AzVMRunCommand -ResourceGroupName $ResourceGroupName -Name $Name -CommandId $CmdId -ScriptString $CmdStr -AsJob
+		$j = Invoke-AzVMRunCommand -ResourceGroupName $ResourceGroupName -Name $Name -CommandId $CmdId -ScriptString $Command -AsJob
 
 		# Store job details
 		$jobs += $j
@@ -222,7 +234,7 @@ function Invoke-VMCmdGroup {
 			State = $Null
 			ExitValue = $Null
 			Duration = 0
-			Command = $CmdStr
+			Command = $Command
 		}
 	}
 
@@ -315,7 +327,7 @@ While ($True) {
 		Select-Object -Property Name,
 			ResourceGroupName,
 			@{L="Priority"; E={[int]$_.Tags.AutoPriority}},
-			@{L="Command"; E={$_.Tags.AutoCommand}}
+			@{L="Command"; E={$(Expand-String -Text $_.Tags.AutoCommand -Params @{Action = $Action})}}
 
 	if ($VMList -ne $Null) {
 		Break
@@ -378,7 +390,7 @@ Switch ($Action) {
 			if ($Exclude -ne "app") {
 
 				Write-Output "Group:$($_.Name) Starting applications ..."
-				$aout = $_.Group | Where-Object { $_.Command } | Invoke-VMCmdGroup -Params @{Action = "Start"}
+				$aout = $_.Group | Where-Object { $_.Command } | Invoke-VMCmdGroup
 				if ($aout.Count -eq 0) {
 					Write-Output "No apps to start"
 					Return
@@ -405,7 +417,7 @@ Switch ($Action) {
 			if ($Exclude -ne "app") {
 
 				Write-Output "Group:$($_.Name) Stopping applications ..."
-				$aout = $_.Group | Where-Object { $_.Command } | Invoke-VMCmdGroup -Params @{Action = "Stop"}
+				$aout = $_.Group | Where-Object { $_.Command } | Invoke-VMCmdGroup
 				if ($aout.Count -eq 0) {
 					Write-Output "No apps to stop"
 					Return
@@ -469,7 +481,7 @@ Switch ($Action) {
 		if ($Exclude -ne "app") {
 
 			Write-Output "Checking applications ..."
-			$aout = $VMList | Where-Object { $_.Command } | Invoke-VMCmdGroup -Params @{Action = "Check"}
+			$aout = $VMList | Where-Object { $_.Command } | Invoke-VMCmdGroup
 			if ($aout.Count -eq 0) {
 				Write-Output "No apps to check"
 				Break
