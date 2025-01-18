@@ -33,7 +33,7 @@
 	-SubscriptionId <string>
 	Subscription ID. If not specified, the current subscription of automation account is used instead
 
-.AZURETAGS
+.VMTAGS
 	Tag VM's with following tags to be read by runbook
 
 	autoGroup [string]
