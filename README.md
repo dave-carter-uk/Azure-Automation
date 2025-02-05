@@ -136,7 +136,7 @@ Example 1
 WINService -Name "SQL Server (MSSQLSERVER)"
 WINService -Name "SQL Server Agent (MSSQLSERVER)"
 WINService -Name "Server Intelligence Agent (N24QASDZQA01)"
-WINCluster
+WINCluster -Roles "SAPSIDROLE", "ANOTHERROLE"
 SAPInstance -Dir F:\usr\sap\XYZ\ASCS01 -User xydadm -Pass "blahblah"
 SAPInstance -Dir F:\usr\sap\XYZ\DVEBMGS00 -User xydadm -Pass "blahblah" -Grace 60
 ```
