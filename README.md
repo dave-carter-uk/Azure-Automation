@@ -131,14 +131,14 @@ The local control script reads a configuration file stored in the same directory
 
 Example 1
 ```
-# File myhost.conf used by azcontrol.ps1
+# File $hostname.conf
 
 WINService -Name "SQL Server (MSSQLSERVER)"
 WINService -Name "SQL Server Agent (MSSQLSERVER)"
 WINService -Name "Server Intelligence Agent (N24QASDZQA01)"
 WINCluster
-SAPInstance -SAPControl F:\usr\sap\XYZ\ASCS01\exe\sapcontrol.exe -User xydadm -Pass "blahblah"
-SAPInstance -SAPControl F:\usr\sap\XYZ\DVEBMGS00\exe\sapcontrol.exe -User xydadm -Pass "blahblah" -Grace 60
+SAPInstance -Dir F:\usr\sap\XYZ\ASCS01 -User xydadm -Pass "blahblah"
+SAPInstance -Dir F:\usr\sap\XYZ\DVEBMGS00 -User xydadm -Pass "blahblah" -Grace 60
 ```
 Services are processed from top to bottom (ascending) on Start and bottom to top (descending) on Stop<br/>
 Calling ```azcontrol.ps1 Start``` will Start the 3 Windows Services first, then the Local Cluster and then SAP ASCS instance and then app instance<br/>
@@ -146,10 +146,10 @@ Calling ```azcontrol.ps1 Stop``` will stop SAP app instance, then ASCS, then loc
 
 Example 2
 ```
-# File myhost.conf used by azcontrol.sh
+# File $hostname.conf
 
-HANACluster /usr/sap/DEV/HDB00/exe/sapcontrol.exe
-SAPInstance /usr/sap/XYZ/DVEBMGS69/exe/sapcontrol.exe
+HANACluster /usr/sap/DEV/HDB00
+SAPInstance /usr/sap/XYZ/DVEBMGS69
 ```
 Services are process from top to bottom (ascending) on Start and bottom to top (descending) on Stop<br/>
 Calling ```azcontrol.sh stop``` will stop SAP Instance and then shutdown the HANA cluster<br/>
