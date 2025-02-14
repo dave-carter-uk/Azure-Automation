@@ -3,7 +3,7 @@ Automate Start/Stop/Check of VM's and applications running in Azure
 
 Schedule Runbook (azvmcontrol.ps1) to Start/Stop or Check VM's and applications running on the VM
 
-The Runbook calls azcontrol.ps1 (azcontrol.sh) on VM host to Start/Stop/Check the application status
+The Runbook calls a local host command if specified on each VM to either Start/Stop or Check the applications on that host
 
 ![image](https://github.com/user-attachments/assets/9eef6b4b-244c-419d-80f1-68c38a95de78)
 
@@ -19,7 +19,7 @@ On start: VM’s / Applications are processed in ascending AutoPriority order<br
 On stop: VM’s / Applications are processed in descending AutoPriority order
 
 **AutoCommand**<br/>
-Local VM command to Start/Stop/Check applications running on that VM. The AzVMControl Runbook uses parameter substitution to instruct the local command which action to process.
+Local VM command to Start/Stop/Check applications running on that VM. The AzVMControl Runbook calls this local command with parameter option: start/stop or check according to the Runbook action
 
 ## RunBook
 The RunBook is provided as a PowerShell script called AzVMControl.ps1, the RunBook can parameterised and scheduled to control the start and stop of systems according to a defined schedule.
