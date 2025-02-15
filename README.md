@@ -174,7 +174,7 @@ etc
 
 
 ## VM Prioritisation
-VM Applications within a group can be grouped into Priority via the AutoPriority tag the Runbook will process each Priority group in parallel working in ascending Priority on Start and descending Priority order on Stop.
+VM Applications within a group can be grouped into Priority via the AutoPriority tag, the Runbook will process each Priority group in parallel working in ascending AutoPriority order on Start and descending AutoPriority order on Stop.
 
 **Example 1**<br/>
 A three tier BW SAP system can be defined as follows:
