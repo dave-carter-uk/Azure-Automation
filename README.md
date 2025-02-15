@@ -174,25 +174,43 @@ etc
 
 
 ## VM Prioritisation
-VM Applications within a group can be grouped into Priority via the AutoPriority tag, the Runbook will process each Priority group in parallel working in ascending AutoPriority order on Start and descending AutoPriority order on Stop.
+VM's are grouped by tag AutoGroup and given a priority via the AutoPriority tag, the Runbook will process each Priority group in parallel working in ascending AutoPriority order on Start and descending AutoPriority order on Stop.
 
 **Example 1**<br/>
 A three tier BW SAP system can be defined as follows:
-![image](https://github.com/user-attachments/assets/01aed82d-c0b3-4c61-9f43-c78826ab2b69)
 
+|VM|Usage|AutoGroup|AutoPriority|
+|--|-----|---------|------------|
+|BWDBHOST|BW Database Host|DEV|1|
+|BWASCSHOST|BW ASCS Host|DEV|1|
+|BWAPPHOST1|BW Instance|DEV|2|
+|BWAPPHOST2|BW Instance|DEV|2|
+|BWAPPHOST3|BW Instance|DEV|2|
 
 This system group is identified by the AutoGroup tag “DEV”. 
-Applications on the database and ASCS instance VM’s are started first simultaneously , followed by the the application instance host which are then started simultaneously.
+The database and ASCS instance VM’s are started first simultaneously, followed by the the application instance hosts which are then started simultaneously.
 
 A stop action performs the same process but in reverse Priority order
 
 **Example 2**<br/>
 Expanding on Example 1, a Business Objects and Business Objects Data Services systems are added to the landscape, these system are dependent on the BW system
-![image](https://github.com/user-attachments/assets/6e830fd3-4814-4fd1-b545-e253ded07742)
+We have also added an AutoCommand to be called as part of the start or stop process
 
+|VM|Usage|AutoGroup|AutoPriority|AutoCommand|
+|--|-----|---------|------------|-----------|
+|BWDBHOST|BW Database Host|DEV|1|/usr/sap/azcontrol.sh $action|
+|BODBHOST|BO Database Host|DEV|1|C:\usr\sap\azcontrol.ps1 $action|
+|DSDBHOST|DS Database Host|DEV|1|C:\usr\sap\azcontrol.ps1 $action|
+|BWASCSHOST|BW ASCS Host|DEV|1|C:\usr\sap\azcontrol.ps1 $action|
+|BWDAPPHOST1|BW Instance Host|DEV|2|C:\usr\sap\azcontrol.ps1 $action|
+|BWDAPPHOST2|BW Instance Host|DEV|2|C:\usr\sap\azcontrol.ps1 $action|
+|BWDAPPHOST2|BW Instance Host|DEV|2|C:\usr\sap\azcontrol.ps1 $action|
+|BOAPPHOST|BO SIA+WEB|DEV|3||
+|DSAPPHOST|DS SIA+WEB|DEV|3||
 
+*No AutoCommand is set for BOAPPHOST and DSAPPHOST because the BO services are configured to auto start*
 
-In this example all the database applications are started first, followed by the BW application instance and finally the BO and BO dataservices instances.
+In this example all the database servers are started first, followed by the BW application instance servers and finally the BO and BO dataservices instances.
 
 A stop action performs the same process but in reverse autoPriority order
 
