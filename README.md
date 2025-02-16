@@ -82,97 +82,6 @@ Output written to the Output windows of the Azure job Portal
 	AzVMControl.ps1 -Group XYZ -Action check -VMStatus 'VM running' -AppStatus 'Running'
 	Check all VM's and applications running, error if not
 
-
-## Local Control Script
-A local control script identified by VM tag AutoCommand is located on each VM and is called by the AzVMControl Runbook to process Applications and Services located on that VM.
-The control script may be different on each host depending on what applications and services that host is running but each script should follow the same parameters and output criteria.
-
-**Example:**
-- Windows	Tag:autoCommand = C:\azscripts\azcontrol.ps1 $Action
-- Linux		Tag:autoCommand = /azscripts/azcontrol.sh $Action
-
-The Runbook replaces '$Action' with the action called i.e.: Start, Stop or Check
-
-The control script reads a local configuration file which defines the applications and services on that host
-
-### Parameters
-	start|stop|(check|*)
-	The AzVMControl Runbook substitutes the $Action for the required control action
-
-### Output
-	Any processing information is written to STDOUT or STDERR
-	The RunBook checks the output for a string to derive the success or failure of the scripts:
-
-- Include (Exit:3) or (Exit: Running) in the output to indicate that all applications are running successfully<br/>
-Example: “All SAP systems successfully running. (Exit:3)”
-
-- Include (Exit:4) or (Exit: Stopped) in the output to indicate that all application are stopped successfully<br/>
-Example: “All SAP systems successfully stopped. (Exit: Stopped)”
-
-The following exit codes can be used.(Exit:*)
--	'' No Exit code supplied
--	0 / Success	The command completed successfully
--	1 / Warning	The command completed with warnings
--	2 / Error	The command completed with errors
--	3 / Running	The command completed with a running status
--	4 / Stopped	The command completed with a stopped status
-
-When called from an Azure Runbook the local scripts are ran as NT/SYSTEM user for Windows and root user for Linux.
-
-### Supported applications and services
-
--	SAPInstance	SAP system instance
--	WINService	Windows service
--	WINCluster	local cluster
--	HANACluster	HANA Cluster
-
-### Configuration file
-The local control script reads a configuration file stored in the same directory as the script and called *hostname*.conf. This configuration file describes the applications and services running on this host.<br/>
-
-Example 1
-```
-# File $hostname.conf
-
-WINService -Name "SQL Server (MSSQLSERVER)"
-WINService -Name "SQL Server Agent (MSSQLSERVER)"
-WINService -Name "Server Intelligence Agent (N24QASDZQA01)"
-WINCluster -Roles "SAPSIDROLE", "ANOTHERROLE"
-SAPInstance -Dir F:\usr\sap\XYZ\ASCS01 -User xydadm -Pass "blahblah"
-SAPInstance -Dir F:\usr\sap\XYZ\DVEBMGS00 -User xydadm -Pass "blahblah" -Grace 60
-```
-Services are processed from top to bottom (ascending) on Start and bottom to top (descending) on Stop<br/>
-Calling ```azcontrol.ps1 Start``` will Start the 3 Windows Services first, then the Local Cluster and then SAP ASCS instance and then app instance<br/>
-Calling ```azcontrol.ps1 Stop``` will stop SAP app instance, then ASCS, then local Cluster and then each Windows Service in turn<br/
-
-Example 2
-```
-# File $hostname.conf
-
-HANACluster /usr/sap/DEV/HDB00
-SAPInstance /usr/sap/XYZ/DVEBMGS69
-```
-Services are process from top to bottom (ascending) on Start and bottom to top (descending) on Stop<br/>
-Calling ```azcontrol.sh stop``` will stop SAP Instance and then shutdown the HANA cluster<br/>
-Calling ```azcontrol.sh start``` will start HANA cluster and then start SAP Instance<br/>
-
-### Custom scripts
-The two example local scripts provided: azcontrol.ps1 and azcontrol.sh don't have to be used<br/>
-Any script can be used that the Runbook can call before VM shutdown and after VM start<br/>
-The Runbook will use parameter substitution to pass the Action to the script, example<br/>
-```/usr/sap/local/myscript.sh -sapinstances $Action```
-
-Use the string ```(Exit*:*)``` to relay the script exit condition back to the Runbook (see above), Examples:
-```
-(Exit-Code:Error) or (Exit:2) - The script ended with error
-(Exit:Warning) or (Exit:1) - The script ended with Warning
-etc
-etc
-```
-
-
-
-
-
 ## VM Prioritisation
 VM's are grouped by tag AutoGroup and given a priority via the AutoPriority tag, the Runbook will process each Priority group in parallel working in ascending AutoPriority order on Start and descending AutoPriority order on Stop.
 
@@ -213,4 +122,40 @@ We have also added an AutoCommand to be called as part of the start or stop proc
 In this example all the database servers are started first, followed by the BW application instance servers and finally the BO and BO dataservices instances.
 
 A stop action performs the same process but in reverse autoPriority order
+
+## AutoCommand
+Runbook calls the command identified by tag:AutoCommand and provides parameter start,stop or check.
+
+The command can be any script to be ran on the host VM to perform the required action.
+
+Scripts are ran as NT/SYSTEM user for Windows and root user for Linux.
+
+
+**Example:**
+- Windows	Tag:autoCommand = C:\azscripts\azcontrol.ps1 $Action
+- Linux		Tag:autoCommand = /azscripts/azcontrol.sh $Action
+
+Runbook will substitue the term '$Action' with either start, stop or check.
+
+### Script Output
+The Runbook identifies the output from the AutoCommand script by looking for the string (Exit*:*)
+
+For example:
+
+- Include (Exit:3) or (Exit: Running) in the output to indicate that all applications are running successfully<br/>
+Example: “All SAP systems successfully running. (Exit:3)”
+
+- Include (Exit-Code:4) or (Exit-Code: Stopped) in the output to indicate that all application are stopped successfully<br/>
+Example: “All SAP systems successfully stopped. (Exit-Code: Stopped)”
+
+The following exit codes can be used.(Exit*:*)
+-	'' No Exit code supplied
+-	0 / Success	The command completed successfully
+-	1 / Warning	The command completed with warnings
+-	2 / Error	The command completed with errors
+-	3 / Running	The command completed with a running status
+-	4 / Stopped	The command completed with a stopped status
+
+
+https://github.com/dave-carter-uk/Apps-Stop-Start-Control provides some example scripts
 
